@@ -2,7 +2,7 @@
 Saya Andina Dwi Listiana dengan NIM 2501065 mengerjakan TP 5 dalam mata kuliah Desain Pemrograman Berorientasi Objek untuk keberkahaanNya maka saya tidak melakukan kecurangan seperti yang telah dispesifikasikan. Aamiin.
 
 # Desain Program
-Program PeopleData dibuat untuk mengelola data mahasiswa berbasis GUI. Dalam program ini saya membagi pengelolaan data ke dalam dua class utama yaitu Person dan PeopleMenu, serta menggunakan file PeopleMenu.form untuk merancang tampilan antarmuka program.
+Program PeopleData dibuat untuk mengelola data mahasiswa berbasis GUI. Dalam program ini, pengelolaan data dibagi ke dalam tiga class utama, yaitu Person, PeopleMenu, dan Database. Selain itu, terdapat file PeopleMenu.form yang digunakan untuk merancang tampilan antarmuka program serta file db_people.sql yang berisi perintah SQL untuk membuat database, tabel, dan memasukkan data awal mahasiswa.
 
 ## 1. Person.java
 Person.java Class Person digunakan untuk merepresentasikan data mahasiswa. Di dalamnya terdapat lima atribut yaitu ID, Nama, TahunLahir, Kategori, dan Prodi. Setiap atribut memiliki getter dan setter yang digunakan untuk mengambil dan mengubah nilai data mahasiswa. Saya memisahkan data mahasiswa ke dalam class tersendiri supaya pengelolaan setiap objek mahasiswa lebih terstruktur.
