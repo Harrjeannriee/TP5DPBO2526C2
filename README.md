@@ -46,9 +46,7 @@ Setelah operasi tambah, ubah, atau hapus berhasil dilakukan, method setTable() a
 7. Sebelum data ditambahkan atau diubah, program memeriksa input melalui proses validasi agar data yang dimasukkan sesuai dengan ketentuan.
 8. Setelah operasi tambah, ubah, atau hapus berhasil dilakukan, method setTable() dipanggil kembali untuk memperbarui tampilan tabel berdasarkan data terbaru dari database.
 
-# Dokumentasi
-## Dokumentasi Program
-
+# Dokumentasi Program
 ### 1. Tampilan Awal
 ![Data Awal](Dokumentasi/1_Data_Awal.png)
 
