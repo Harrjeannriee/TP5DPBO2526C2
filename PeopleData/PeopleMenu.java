@@ -1,8 +1,7 @@
 import javax.swing.*;
-import java.util.ArrayList;
 import javax.swing.table.DefaultTableModel;
 
-public class PeopleMenu {
+public class PeopleMenu extends JFrame {
     private JTextField idField;
     private JPanel mainPanel;
     private JTextField namaField;
@@ -15,12 +14,14 @@ public class PeopleMenu {
     private JButton hapusButton;
     private JButton batalButton;
 
-    //tempat menyimpan data mahasiswa
-    private ArrayList<Person> daftarMahasiswa = new ArrayList<>();
+    //nambah atribut database
+    private Database database;
 
     //Constructor buat mengisi pilihan kategori dan prodi
     public PeopleMenu()
     {
+        database = new Database();
+
         //isi pilihan kategori
         kategoriComboBox.addItem("Aktif");
         kategoriComboBox.addItem("Cuti");
@@ -31,19 +32,6 @@ public class PeopleMenu {
         prodiComboBox.addItem("Ilmu Komputer");
         prodiComboBox.addItem("Sistem Informasi");
         prodiComboBox.addItem("Kecerdasan Buatan");
-
-        //isi data awal
-        daftarMahasiswa.add(new Person(
-                "2501065", "Andina", 2006, "Aktif", "Ilmu Komputer"
-        ));
-
-        daftarMahasiswa.add(new Person(
-                "2501066", "Dwi", 2005, "Cuti", "Sistem Informasi"
-        ));
-
-        daftarMahasiswa.add(new Person(
-                "2501067", "Listiana", 2004, "Alumni", "Kecerdasan Buatan"
-        ));
 
         //tampiljan tabel
         setTable();
@@ -71,6 +59,7 @@ public class PeopleMenu {
             }
         });
 
+
     }
 
     public static void main(String[] args)
@@ -95,51 +84,76 @@ public class PeopleMenu {
         };
         DefaultTableModel model = new DefaultTableModel(columnNames, 0);
 
-        for (Person person : daftarMahasiswa)
-        {
-            Object[] rowData = {
-                    person.getId(),
-                    person.getNama(),
-                    person.getTahunLahir(),
-                    person.getKategori(),
-                    person.getProdi()
-            };
-            model.addRow(rowData);
+        try {
+            String sql = "SELECT * FROM person";
+            java.sql.ResultSet rs = database.selectQuery(sql);
+
+            while (rs.next())
+            {
+                Object[] rowData = {
+                        rs.getString("id"),
+                        rs.getString("nama"),
+                        rs.getInt("tahun_lahir"),
+                        rs.getString("kategori"),
+                        rs.getString("prodi")
+                };
+                model.addRow(rowData);
+            }
+            rs.close();
+        } catch (java.sql.SQLException e) {
+            JOptionPane.showMessageDialog(
+                    mainPanel,
+                    "Gagal mengambil data: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
         }
         mahasiswaTable.setModel(model);
     }
 
-    //METHOD BUAT INSERT DATA
 
+    //METHOD BUAT INSERT DATA
     public void insertData() {
         try {
+            //ambil value textField dan comboBox
             String id = idField.getText().trim();
             String nama = namaField.getText().trim();
             int tahunLahir = Integer.parseInt(tahunLahirField.getText().trim());
             String kategori = (String) kategoriComboBox.getSelectedItem();
             String prodi = (String) prodiComboBox.getSelectedItem();
 
-            if (!validasiData(id, nama, tahunLahir, -1)) {
+            //validasi data
+            if (!validasiData(id, nama, tahunLahir, null)) {
                 return;
             }
 
-            Person person = new Person(id, nama, tahunLahir, kategori, prodi);
-            daftarMahasiswa.add(person);
+            //tambah data ke database
+            String sqlQuery = "INSERT INTO person " + "(id, nama, tahun_lahir, kategori, prodi) VALUES ('"
+                    + id + "', '"
+                    + nama + "', "
+                    + tahunLahir + ", '"
+                    + kategori + "', '"
+                    + prodi + "')";
+            database.insertUpdateDeleteQuery(sqlQuery);
 
+            //update table
             setTable();
+
+            //clear form
             clearForm();
 
+            //feedback
             JOptionPane.showMessageDialog(
-                    mainPanel,
-                    "Data mahasiswa berhasil ditambahkan!"
+                    mainPanel, "Data berhasil ditambahkan!"
             );
-
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(
-                    mainPanel,
-                    "Tahun lahir harus berupa angka!",
-                    "Input tidak valid",
+                    mainPanel, "Tahun lahir harus berupa angka!", "Input tidak valid",
                     JOptionPane.WARNING_MESSAGE
+            );
+        } catch (RuntimeException e) {
+            JOptionPane.showMessageDialog(
+                    mainPanel, "Gagal menambahkan data!", "Database Error", JOptionPane.ERROR_MESSAGE
             );
         }
     }
@@ -167,10 +181,7 @@ public class PeopleMenu {
     public void updateData() {
         if (selectedIndex == -1) {
             JOptionPane.showMessageDialog(
-                    mainPanel,
-                    "Pilih data mahasiswa yang ingin diubah!",
-                    "Peringatan",
-                    JOptionPane.WARNING_MESSAGE
+                    mainPanel, "Pilih data mahasiswa yang ingin diubah!", "Peringatan", JOptionPane.WARNING_MESSAGE
             );
             return;
         }
@@ -182,32 +193,46 @@ public class PeopleMenu {
             String kategori = (String) kategoriComboBox.getSelectedItem();
             String prodi = (String) prodiComboBox.getSelectedItem();
 
-            if (!validasiData(id, nama, tahunLahir, selectedIndex)) {
+            //ambil id lama dari baris yang dipilih
+            int row = mahasiswaTable.getSelectedRow();
+
+            if(row == -1){
+                JOptionPane.showMessageDialog(
+                        mainPanel, "Pilih data mahasiswa yang ingin diubah!", "Peringatan", JOptionPane.WARNING_MESSAGE
+                );
                 return;
             }
+            String idLama = mahasiswaTable.getValueAt(row, 0).toString();
 
-            Person person = daftarMahasiswa.get(selectedIndex);
+            //validasi data
+            if (!validasiData(id, nama, tahunLahir, idLama)){
+                return;
+            }
+            //update data di database
+            String sqlQuery = "UPDATE person SET "
+                    + "id = '" + id + "', "
+                    + "nama = '" + nama + "', "
+                    + "tahun_lahir = " + tahunLahir + ", "
+                    + "kategori = '" + kategori + "', "
+                    + "prodi = '" + prodi + "' "
+                    + "WHERE id = '" + idLama + "'";
 
-            person.setId(id);
-            person.setNama(nama);
-            person.setTahunLahir(tahunLahir);
-            person.setKategori(kategori);
-            person.setProdi(prodi);
+            database.insertUpdateDeleteQuery(sqlQuery);
 
             setTable();
             clearForm();
 
             JOptionPane.showMessageDialog(
-                    mainPanel,
-                    "Data mahasiswa berhasil diubah!"
+                    mainPanel, "Data mahasiswa berhasil diubah!"
             );
 
         } catch (NumberFormatException e) {
             JOptionPane.showMessageDialog(
-                    mainPanel,
-                    "Tahun lahir harus berupa angka!",
-                    "Input tidak valid",
-                    JOptionPane.WARNING_MESSAGE
+                    mainPanel, "Tahun lahir harus berupa angka!",  "Input tidak valid",  JOptionPane.WARNING_MESSAGE
+            );
+        } catch (RuntimeException e){
+            JOptionPane.showMessageDialog(
+                    mainPanel, "Gagal mengubah data: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE
             );
         }
     }
@@ -219,10 +244,7 @@ public class PeopleMenu {
         if (selectedIndex == -1)
         {
             JOptionPane.showMessageDialog(
-                    mainPanel,
-                    "Pilih data mahasiswa yang ingin dihapus!",
-                    "Peringatan",
-                    JOptionPane.WARNING_MESSAGE
+                    mainPanel, "Pilih data mahasiswa yang ingin dihapus!", "Peringatan", JOptionPane.WARNING_MESSAGE
             );
             return;
         }
@@ -237,20 +259,32 @@ public class PeopleMenu {
 
         if (konfirmasi == JOptionPane.YES_OPTION)
         {
-            daftarMahasiswa.remove(selectedIndex);
+            try
+            {
+                int row = mahasiswaTable.getSelectedRow();
+                String id = mahasiswaTable.getValueAt(row, 0).toString();
 
-            setTable();
-            clearForm();
+                String sqlQuery = "DELETE FROM person WHERE id = '" + id + "'";
 
-            JOptionPane.showMessageDialog(
-                    mainPanel,
-                    "Data mahasiswa berhasil dihapus!"
-            );
+                database.insertUpdateDeleteQuery(sqlQuery);
+
+                setTable();
+                clearForm();
+
+                JOptionPane.showMessageDialog(
+                        mainPanel, "Data mahasiswa berhasil dihapus!"
+                );
+            } catch (RuntimeException e){
+                JOptionPane.showMessageDialog(
+                        mainPanel, "Gagal menghapus data: " + e.getMessage(), "Database Error", JOptionPane.ERROR_MESSAGE
+                );
+            }
         }
     }
 
-    //METHOD VALIDASI
-    private boolean validasiData(String id, String nama, int tahunLahir, int indexDiabaikan) {
+    //VALIDASI DATA YEY
+    private boolean validasiData(String id, String nama, int tahunLahir, String idLama) {
+        //jika kolom id dan nama kosong maka tidak valid
         if (id.isEmpty() || nama.isEmpty()) {
             JOptionPane.showMessageDialog(
                     mainPanel,
@@ -261,6 +295,7 @@ public class PeopleMenu {
             return false;
         }
 
+        //jika tahun lahir melebihi batas ini maka gak valid
         if (tahunLahir < 1900 || tahunLahir > 2026) {
             JOptionPane.showMessageDialog(
                     mainPanel,
@@ -271,9 +306,15 @@ public class PeopleMenu {
             return false;
         }
 
-        for (int i = 0; i < daftarMahasiswa.size(); i++) {
-            if (i != indexDiabaikan &&
-                    daftarMahasiswa.get(i).getId().equalsIgnoreCase(id)) {
+        try {
+            String sqlQuery = "SELECT id FROM person WHERE id = '" + id + "'";
+            java.sql.ResultSet rs = database.selectQuery(sqlQuery);
+
+            boolean idDuplikat = rs.next();
+            rs.close();
+
+            //id tidak boleh ada yang sama atau duplikat
+            if (idDuplikat && (idLama == null || !id.equals(idLama))) {
                 JOptionPane.showMessageDialog(
                         mainPanel,
                         "ID mahasiswa sudah digunakan!",
@@ -282,7 +323,16 @@ public class PeopleMenu {
                 );
                 return false;
             }
+        } catch (java.sql.SQLException e) {
+            JOptionPane.showMessageDialog(
+                    mainPanel,
+                    "Gagal memvalidasi data: " + e.getMessage(),
+                    "Database Error",
+                    JOptionPane.ERROR_MESSAGE
+            );
+            return false;
         }
+
         return true;
     }
 
